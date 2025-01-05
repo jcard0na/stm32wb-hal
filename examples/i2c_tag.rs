@@ -17,6 +17,8 @@ use crate::hal::prelude::*;
 use crate::rt::entry;
 use crate::rt::ExceptionFrame;
 
+use embedded_hal::digital::v2::InputPin; // Import the trait
+
 #[entry]
 fn main() -> ! {
     defmt::info!("STM32WB55 i2c scanner");
@@ -27,6 +29,11 @@ fn main() -> ! {
     let mut rcc = dp.RCC.constrain();
 
     let mut gpiob = dp.GPIOB.split(&mut rcc);
+
+    let button = gpiob.pb2.into_pull_up_input(&mut gpiob.moder, &mut gpiob.pupdr);
+    while button.is_high().unwrap() {
+    }
+    defmt::info!("Button is {}", button.is_high());
 
     let mut i2c1 = dp.I2C1;
     let scl = gpiob
