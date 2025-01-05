@@ -29,11 +29,9 @@ fn main() -> ! {
     let mut rcc = dp.RCC.constrain();
 
     let mut gpiob = dp.GPIOB.split(&mut rcc);
+    let mut gpioa = dp.GPIOA.split(&mut rcc);
 
-    let button = gpiob.pb2.into_pull_up_input(&mut gpiob.moder, &mut gpiob.pupdr);
-    while button.is_high().unwrap() {
-    }
-    defmt::info!("Button is {}", button.is_high());
+    let gpo = gpioa.pa6.into_pull_up_input(&mut gpioa.moder, &mut gpioa.pupdr);
 
     let mut i2c1 = dp.I2C1;
     let scl = gpiob
@@ -50,26 +48,26 @@ fn main() -> ! {
     const SYS_MEMORY_ADDRESS :u8 = 0x57;
     defmt::info!("Scanning addresses...");
 
-    for address in [USER_MEMORY_ADDRESS, SYS_MEMORY_ADDRESS] {
-        // Use fresh I2C peripheral on the each iteration
-        let mut i2c = I2c::i2c1(i2c1, (scl, sda), 100.khz(), &mut rcc);
-
-        let mut byte: [u8; 1] = [0; 1];
-        if let Ok(_) = i2c.read(address, &mut byte) {
-            defmt::info!("Found a device with address 0x{:02x}", address);
-        } else {
-            defmt::info!("Device with address 0x{:02x} NOT FOUND", address);
-        }
-
-        // Decompose the I2C peripheral to re-build it again on the next iteration
-        let (i2c, (scl_pin, sda_pin)) = i2c.free();
-        i2c1 = i2c;
-        scl = scl_pin;
-        sda = sda_pin;
-    }
-    defmt::info!("Done scanning");
-
     loop {
+        while gpo.is_high().unwrap() {}
+        for address in [USER_MEMORY_ADDRESS, SYS_MEMORY_ADDRESS] {
+            // Use fresh I2C peripheral on the each iteration
+            let mut i2c = I2c::i2c1(i2c1, (scl, sda), 100.khz(), &mut rcc);
+
+            let mut byte: [u8; 1] = [0; 1];
+            if let Ok(_) = i2c.read(address, &mut byte) {
+                defmt::info!("Found a device with address 0x{:02x}", address);
+            } else {
+                defmt::info!("Device with address 0x{:02x} NOT FOUND", address);
+            }
+
+            // Decompose the I2C peripheral to re-build it again on the next iteration
+            let (i2c, (scl_pin, sda_pin)) = i2c.free();
+            i2c1 = i2c;
+            scl = scl_pin;
+            sda = sda_pin;
+        }
+        defmt::info!("Done scanning");
     }
 }
 
