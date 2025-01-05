@@ -45,29 +45,44 @@ fn main() -> ! {
     let mut sda = sda.into_af4(&mut gpiob.moder, &mut gpiob.afrh);
 
     const USER_MEMORY_ADDRESS :u8 = 0x53;
-    const SYS_MEMORY_ADDRESS :u8 = 0x57;
+    // const SYS_MEMORY_ADDRESS :u8 = 0x57;
+    const MBOX_UPPER_ADDRESS :u8 = 0x20;
+    const MBOX_LOWER_ADDRESS :u8 = 0x08;
+    
     defmt::info!("Scanning addresses...");
 
     loop {
         while gpo.is_high().unwrap() {}
-        for address in [USER_MEMORY_ADDRESS, SYS_MEMORY_ADDRESS] {
-            // Use fresh I2C peripheral on the each iteration
-            let mut i2c = I2c::i2c1(i2c1, (scl, sda), 100.khz(), &mut rcc);
 
-            let mut byte: [u8; 1] = [0; 1];
-            if let Ok(_) = i2c.read(address, &mut byte) {
-                defmt::info!("Found a device with address 0x{:02x}", address);
-            } else {
-                defmt::info!("Device with address 0x{:02x} NOT FOUND", address);
+        // Use fresh I2C peripheral on the each iteration
+        let mut i2c = I2c::i2c1(i2c1, (scl, sda), 100.khz(), &mut rcc);
+
+        // Set start of mailbox address
+        let mbox_addr: [u8; 2] = [MBOX_UPPER_ADDRESS, MBOX_LOWER_ADDRESS];
+        let mut mbox_data: [u8; 256] = [0x0; 256];
+        if let Ok(_) = i2c.write(USER_MEMORY_ADDRESS, &mbox_addr) {
+            defmt::info!("Found a device with address 0x{:02x}", USER_MEMORY_ADDRESS);
+
+            // the stm32 hals only support up to 255-byte transfers.  Break the transfer in two
+            // to read the full 256 supported by the tag
+            if let Ok(_) = i2c.read(USER_MEMORY_ADDRESS, &mut mbox_data[0..128]) {
+                defmt::info!("Read mbox data OK (lower 128 bytes)");
             }
-
-            // Decompose the I2C peripheral to re-build it again on the next iteration
-            let (i2c, (scl_pin, sda_pin)) = i2c.free();
-            i2c1 = i2c;
-            scl = scl_pin;
-            sda = sda_pin;
         }
-        defmt::info!("Done scanning");
+
+        if let Ok(_) = i2c.write(USER_MEMORY_ADDRESS + 128, &mbox_addr) {
+            if let Ok(_) = i2c.read(USER_MEMORY_ADDRESS, &mut mbox_data[128..256]) {
+                defmt::info!("Read mbox data OK (upper 128 bytes)");
+            }
+        }
+
+
+        // Decompose the I2C peripheral to re-build it again on the next iteration
+        let (i2c, (scl_pin, sda_pin)) = i2c.free();
+        i2c1 = i2c;
+        scl = scl_pin;
+        sda = sda_pin;
+        defmt::info!("--- Done scanning --- ");
     }
 }
 
