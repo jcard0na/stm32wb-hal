@@ -10,7 +10,7 @@ extern crate cortex_m;
 extern crate cortex_m_rt as rt;
 extern crate stm32wb_hal as hal;
 use panic_probe as _;
-use rtt_target::{rtt_init_print, rprintln};
+use defmt_rtt as _;
 
 use crate::hal::i2c::I2c;
 use crate::hal::prelude::*;
@@ -19,8 +19,7 @@ use crate::rt::ExceptionFrame;
 
 #[entry]
 fn main() -> ! {
-    rtt_init_print!(); // You may prefer to initialize another way
-    rprintln!("STM32WB55 i2c scanner");
+    defmt::info!("STM32WB55 i2c scanner");
 
     let dp = hal::stm32::Peripherals::take().unwrap();
 
@@ -41,19 +40,19 @@ fn main() -> ! {
     let mut sda = sda.into_af4(&mut gpiob.moder, &mut gpiob.afrh);
 
     const NUM_ADDRESSES: u8 = 128;
-    rprintln!("Scanning {} addresses...", NUM_ADDRESSES);
+    defmt::info!("Scanning {} addresses...", NUM_ADDRESSES);
 
     for address in 0u8..NUM_ADDRESSES {
         // Use fresh I2C peripheral on the each iteration
         let mut i2c = I2c::i2c1(i2c1, (scl, sda), 100.khz(), &mut rcc);
 
         if address % 32 == 0 {
-            rprintln!("Scanned {} / {} addresses", address, NUM_ADDRESSES);
+            defmt::info!("Scanned {} / {} addresses", address, NUM_ADDRESSES);
         }
 
         let mut byte: [u8; 1] = [0; 1];
         if let Ok(_) = i2c.read(address, &mut byte) {
-            rprintln!("Found a device with address 0x{:02x}", address);
+            defmt::info!("Found a device with address 0x{:02x}", address);
         }
 
         // Decompose the I2C peripheral to re-build it again on the next iteration
@@ -63,7 +62,7 @@ fn main() -> ! {
         sda = sda_pin;
     }
 
-    rprintln!("Scanned {} / {} addresses", NUM_ADDRESSES, NUM_ADDRESSES);
+    defmt::info!("Scanned {} / {} addresses", NUM_ADDRESSES, NUM_ADDRESSES);
 
     loop {
         cortex_m::asm::wfi();
