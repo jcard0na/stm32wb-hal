@@ -1,5 +1,6 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
-runner = "arm-none-eabi-gdb -q"
+# runner = "arm-none-eabi-gdb -q"
+runner = "probe-rs run --chip STM32WB55RGVx"
 
 rustflags = [
   "-C", "link-arg=-Tlink.x",

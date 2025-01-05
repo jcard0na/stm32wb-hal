@@ -27,18 +27,18 @@ fn main() -> ! {
     // Use default clock frequency of 4 MHz running from MSI
     let mut rcc = dp.RCC.constrain();
 
-    let mut gpioa = dp.GPIOA.split(&mut rcc);
+    let mut gpiob = dp.GPIOB.split(&mut rcc);
 
     let mut i2c1 = dp.I2C1;
-    let scl = gpioa
-        .pa9
-        .into_open_drain_output(&mut gpioa.moder, &mut gpioa.otyper);
-    let mut scl = scl.into_af4(&mut gpioa.moder, &mut gpioa.afrh);
+    let scl = gpiob
+        .pb8
+        .into_open_drain_output(&mut gpiob.moder, &mut gpiob.otyper);
+    let mut scl = scl.into_af4(&mut gpiob.moder, &mut gpiob.afrh);
 
-    let sda = gpioa
-        .pa10
-        .into_open_drain_output(&mut gpioa.moder, &mut gpioa.otyper);
-    let mut sda = sda.into_af4(&mut gpioa.moder, &mut gpioa.afrh);
+    let sda = gpiob
+        .pb9
+        .into_open_drain_output(&mut gpiob.moder, &mut gpiob.otyper);
+    let mut sda = sda.into_af4(&mut gpiob.moder, &mut gpiob.afrh);
 
     const NUM_ADDRESSES: u8 = 128;
     hprintln!("Scanning {} addresses...", NUM_ADDRESSES).unwrap();

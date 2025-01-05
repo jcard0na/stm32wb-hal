@@ -63,7 +63,7 @@ xG-package = []
 
 rt = ["stm32wb-pac/rt"]
 
-default = [ "rt" ]
+default = [ "rt", "xG-package" ]
 
 [dev-dependencies]
 cortex-m-rtfm = "0.5"
